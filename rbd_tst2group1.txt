@@ -1,0 +1,77 @@
+--Group 1
+
+-- 1. Find .. respective category
+SELECT * FROM Room a
+WHERE RoomNumber = {
+	SELECT MIN(RoomNumber)
+	FROM Room b
+	WHERE a.idcategory = b.idcategory
+
+};
+
+-- 2. List the number of paid reservations for each guest. Do not list those quests who have booked less than 3 times.
+SELECT IdGuest, COUNT(*) FROM Reservation
+GROUP BY IdGuest
+HAVING COUNT(*) >= 3;
+
+-- 3. Find the category with the most rooms.
+SELECT IDCAtegory, COUNT(*) FROM Room
+GROUP BY IDCategory
+HAVING COUNT(*) = (
+	SELECT MAX(COUNT(*)) FROM Room
+	GROUP BY IDCategory
+	);
+
+-- 4. List the guests who booked rooms in categories 1 and 3 without repetition.
+
+SELECT DISTINCT IdGuest FROM Reservation
+INNER JOIN Room ON Reservation.RoomNumber = Room.RoomNumber
+WHERE IDCategory = 1
+INTERSECTS
+SELECT DISTINCT IdGuest FROM Reservation
+INNER JOIN Room ON Reservation.RoomNumber = Room.RoomNumber
+WHERE IDCategory = 3;
+
+-- 5 List the duration of all reservations. Provide the customer's name and surname, and name the duration column "Booking duration".
+
+SELECT Guest.name, Guest.surname, reservation.roomnumber, (Reservation.dateend - Reservation.datestart) AS "Booking Duration" FROM reservation
+INNER JOIN Guest ON reservation.idguest = Guest.idguest;
+
+-- 6 List the number of unpaid reservations for each guest. Do not list guests with last names beginning with the letter "B".
+
+SELECT Guest.surname, COUNT(*) FROM Resevation
+INNER JOIN Guest ON Resevation.IdGuest = Guest.idGuest
+WHERE Paid = 0 AND Surname NOT LIKE 'B%'
+GROUP BY Guest.surname;
+
+-- 7 Find rooms that have never been booked.
+
+SELECT RoomNumber FROM Room
+WHERE NOT EXISTS (
+	SELECT * FROM Reservation r
+	WHERE Room.RoomNumber = r.roomnumber
+);
+
+-- 8 List guests who have never rented a room (first name, last name).
+SELECT name, surname FROM Guest
+WHERE IdGuest NOT IN (
+	SELECT IdGuest FROM Reservation
+);
+
+-- 9 List the reservation details as: first name, surname, room number, and category name. Sort by category name and descending by the last name.
+
+SELECT Guest.Name, Surname, Room.RoomNumber, Category.name FROM Reservation
+INNER JOIN Guest ON Reservation.idguest = Guest.idguest
+INNER JOIN Room ON Reservation.roomnumber = Room.roomnumber
+INNER JOIN Category ON Reservation.idcategory = Category.idcategory
+ORDER BY Category.name, Surname DESC;
+
+-- 10 List the luxurious rooms that have a higher capacity than the minimum capacity of a standard room.
+
+SELECT Roomnumber FROM Room
+INNER JOIN Category ON Room.idcategory = Category.idcategory
+WHERE Name = 'Luxurious' AND Capacity > 3 ANY (
+	SELECT Capacity FROM Room
+	INNER JOIN Category ON Room.idcategory = Category.idcategory
+	Where Name = 'Standard'
+);
